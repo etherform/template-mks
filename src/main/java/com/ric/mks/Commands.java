@@ -12,13 +12,19 @@ public class Commands {
 
     @MQCommand
     public CommandReturn setControlQueue(String s) {
-        app.setControlQueneName(s);
+        app.setControlQueueName(s);
         return ret.ok("Ok.");
     }
 
     @MQCommand
     public CommandReturn setLogQueue(String s) {
-        app.setLogQueneName(s);
+        app.setLogQueueName(s);
+        return ret.ok("Ok.");
+    }
+
+    @MQCommand
+    public CommandReturn setOutQueue(String s) {
+        app.setOutQueueName(s);
         return ret.ok("Ok.");
     }
 

@@ -16,8 +16,9 @@ public class App {
 
     //public String id = Integer.toHexString((int)(Math.random()*0x1000000));
     private String name;
-    private String logQueneName;
-    private String controlQueneIn;
+    private String logQueueName;
+    private String controlQueueIn;
+    private String outQueueName;
 
     @Autowired
     private AmqpTemplate amqp;
@@ -32,18 +33,20 @@ public class App {
 
     public App(@Value("${name}") String appName) {
         this.name = appName;
-        this.logQueneName = appName + "_log";
-        this.controlQueneIn = appName + "_control";
+        this.logQueueName = appName + "_log";
+        this.controlQueueIn = appName + "_control";
+        this.outQueueName = appName + "_out";
     }
 
     public void sendLog(String str) {
-        amqp.convertAndSend(logQueneName, str);
+        amqp.convertAndSend(logQueueName, str);
     }
 
     //public String getId() {return id;}
     public String getName() {return name;}
-    public void setLogQueneName(String s) {this.logQueneName = s;}
-    public void setControlQueneName(String s) {this.controlQueneIn =s;}
+    public void setLogQueueName(String s) {this.logQueueName = s;}
+    public void setControlQueueName(String s) {this.controlQueueIn = s;}
+    public void setOutQueueName(String s) {this.outQueueName = s;}
 
     @Bean
     public MksControl<Commands> mksController(Commands commands) {
@@ -83,12 +86,17 @@ public class App {
 
     @Bean
     private Queue inputQueue() {
-        return new Queue(controlQueneIn, false, false, false);
+        return new Queue(controlQueueIn, false, false, false);
     }
 
     @Bean
     private Queue genLogQueue() {
-        return new Queue(logQueneName, false, false, false);
+        return new Queue(logQueueName, false, false, false);
+    }
+
+    @Bean
+    private Queue outQueue() {
+        return new Queue(outQueueName, false, false, false);
     }
 
 
