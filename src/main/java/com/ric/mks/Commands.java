@@ -38,4 +38,9 @@ public class Commands {
         return ret.ok("Run test2: arg1:"+a+" arg2:"+b);
     }
 
+    @MQCommand
+    public CommandReturn ping() {
+        return ret.ok("pong");
+    }
+
 }
