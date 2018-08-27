@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Vector;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,6 +28,10 @@ public class MksControl<T> {
                 commandsList.put(m.getName(), m);
             }
         }
+    }
+
+    public Set<String> getCommandList() {
+        return commandsList.keySet();
     }
 
     public CommandReturn control(String msg) {

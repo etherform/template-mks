@@ -43,4 +43,17 @@ public class Commands {
         return ret.ok("pong");
     }
 
+    @MQCommand
+    public CommandReturn getName() {
+        return ret.ok("{\"appName\":\""+app.getName()+"\"}");
+    }
+
+    @MQCommand
+    public CommandReturn getCommands() {
+        String cmds = "";
+        for (String s : app.getCommands()) cmds += "\""+s+"\",";
+        cmds = cmds.substring(0, cmds.length() - 1);
+        return ret.ok("{\"commands\":["+cmds+"]}");
+    }
+
 }

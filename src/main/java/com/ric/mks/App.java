@@ -1,5 +1,7 @@
 package com.ric.mks;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
@@ -42,6 +44,10 @@ public class App {
         amqp.convertAndSend(logQueueName, str);
     }
 
+    public void sendOut(String str) {
+        amqp.convertAndSend(outQueueName, str);
+    }
+
     //public String getId() {return id;}
     public String getName() {return name;}
     public void setLogQueueName(String s) {this.logQueueName = s;}
@@ -77,11 +83,20 @@ public class App {
         String msg = new String(message.getBody());
         CommandReturn ret = mksControl.control(msg);
         if (!ret.error) {
+            sendOut(ret.log);
             sendLog(ret.log);
             return;
         }
         ret = mksCall.control(msg);
+        sendOut(ret.log);
         sendLog(ret.log);
+    }
+
+    public Set<String> getCommands() {
+        HashSet<String> ret = new HashSet<String>();
+        ret.addAll(mksControl.getCommandList());
+        ret.addAll(mksCall.getCommandList());
+        return ret;
     }
 
     @Bean
