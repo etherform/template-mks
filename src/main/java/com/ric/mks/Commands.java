@@ -1,59 +1,63 @@
 package com.ric.mks;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-@Component
 public class Commands {
-    @Autowired
-    private App app;
 
-    private CommandReturn ret = new CommandReturn();
+    private Mks mks;
+
+    public Commands() {}
+    public Commands(Mks mks) {this.mks = mks;}
+
+    public void setApp(Mks a) {mks = a;}
 
     @MQCommand
-    public CommandReturn setControlQueue(String s) {
-        app.setControlQueueName(s);
-        return ret.ok("Ok.");
+    public String setControlQueue(String s) {
+        mks.setControlQueueName(s);
+        return "Ok, control queue is "+s+" now.";
     }
 
     @MQCommand
-    public CommandReturn setLogQueue(String s) {
-        app.setLogQueueName(s);
-        return ret.ok("Ok.");
+    public String setLogQueue(String s) {
+        mks.setLogQueueName(s);
+        return "Ok, log queue is "+s+" now.";
     }
 
     @MQCommand
-    public CommandReturn setOutQueue(String s) {
-        app.setOutQueueName(s);
-        return ret.ok("Ok.");
+    public String setOutQueue(String s) {
+        mks.setOutQueueName(s);
+        return "Ok, out queue is "+s+ " now.";
     }
 
     @MQCommand
-    public CommandReturn test(String a) {
-        return ret.ok("Run test: arg:"+a);
+    public String test(String a) {
+        return "Run test: arg:"+a;
     }
 
     @MQCommand
-    public CommandReturn test2(String a, String b) {
-        return ret.ok("Run test2: arg1:"+a+" arg2:"+b);
+    public String test2(String a, String b) {
+        return "Run test2: arg1:"+a+" arg2:"+b;
     }
 
     @MQCommand
-    public CommandReturn ping() {
-        return ret.ok("pong");
+    public String test3(Integer a, Double b, Boolean c) {
+        return "Run test3: arg1:"+a+" arg2:"+b+" arg3:"+c;
     }
 
     @MQCommand
-    public CommandReturn getName() {
-        return ret.ok("{\"appName\":\""+app.getName()+"\"}");
+    public String ping() {
+        return "pong";
     }
 
     @MQCommand
-    public CommandReturn getCommands() {
+    public String getName() {
+        return "{\"appName\":\""+mks.getName()+"\"}";
+    }
+
+    @MQCommand
+    public String getCommands() {
         String cmds = "";
-        for (String s : app.getCommands()) cmds += "\""+s+"\",";
+        for (String s : mks.getCommands()) cmds += "\""+s+"\",";
         cmds = cmds.substring(0, cmds.length() - 1);
-        return ret.ok("{\"commands\":["+cmds+"]}");
+        return "{\"commands\":["+cmds+"]}";
     }
 
 }

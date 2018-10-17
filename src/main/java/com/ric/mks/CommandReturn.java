@@ -18,4 +18,8 @@ public class CommandReturn {
         error = true;
         return this;
     }
+
+    public String toString() {
+        return body;
+    }
 }

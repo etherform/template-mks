@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -14,30 +15,38 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @Component
-public class App {
+public class Mks {
 
     //public String id = Integer.toHexString((int)(Math.random()*0x1000000));
     private String name;
     private String logQueueName;
     private String controlQueueIn;
     private String outQueueName;
+    //private HashMap<String, Object> args;
 
     @Autowired
     private AmqpTemplate amqp;
-    @Autowired
-    private MksControl<Commands> mksControl;
-    @Autowired
-    private MksControl<MksCommands> mksCall;
+
+    private MksControl mksControl;
 
     public void log(String str) {
         System.out.println(str);
     }
 
-    public App(@Value("${name}") String appName) {
+    public void feed(Object food) {
+        mksControl.feed(food);
+    }
+
+    public Mks(@Value("${name}") String appName) {
         this.name = appName;
         this.logQueueName = appName + "_log";
         this.controlQueueIn = appName + "_control";
         this.outQueueName = appName + "_out";
+        this.mksControl = new MksControl();
+        //args = new HashMap<String, Object>();
+        //args.put("x-max-length-bytes", new Integer(1024*1024*16)); //16MB
+        Commands cmds = new Commands(this);
+        this.feed(cmds);
     }
 
     public void sendLog(String str) {
@@ -53,16 +62,6 @@ public class App {
     public void setLogQueueName(String s) {this.logQueueName = s;}
     public void setControlQueueName(String s) {this.controlQueueIn = s;}
     public void setOutQueueName(String s) {this.outQueueName = s;}
-
-    @Bean
-    public MksControl<Commands> mksController(Commands commands) {
-        return new MksControl<Commands>(commands);
-    }
-
-    @Bean
-    public MksControl<MksCommands> mkdCommands(MksCommands cmds) {
-        return new MksControl<MksCommands>(cmds);
-    }
 
     @Bean
     public ConnectionFactory connectionFactory(
@@ -87,15 +86,13 @@ public class App {
             sendLog(ret.log);
             return;
         }
-        ret = mksCall.control(msg);
-        sendOut(ret.log);
+        //sendErr
         sendLog(ret.log);
     }
 
     public Set<String> getCommands() {
         HashSet<String> ret = new HashSet<String>();
         ret.addAll(mksControl.getCommandList());
-        ret.addAll(mksCall.getCommandList());
         return ret;
     }
 
