@@ -44,7 +44,7 @@ public class MksControl {
     }
 
     private CommandReturn ret = new CommandReturn();
-    private HashMap<String, Call> commandsList;
+    private HashMap<String, Call> commandsList; //Все "съеденные" команды.
     private ArrayList<Arg> argList;
     private ObjectMapper om = new ObjectMapper();
 
@@ -53,7 +53,9 @@ public class MksControl {
         argList = new ArrayList<Arg>(10);
         for (int i = 0; i < 10; i++) argList.add(new Arg());
     }
-
+    /**
+     * Собирает все методы с аннотицией MQCommand c любого объекта.
+     */
     public void feed(Object tp) {
         Method[] ms = tp.getClass().getMethods();
         for (Method m : ms) {
@@ -75,12 +77,13 @@ public class MksControl {
         String commandStr = null;
         ArrayList<String> args = new ArrayList<String>(10);
         Object retObj = "";
-        try {
+        try { //парсинг json {command:[arg1,arg2]}
             JsonNode in = om.readTree(msg);
-            commandStr = in.fieldNames().next();
-            if (in.get(commandStr).isArray()) {
+            commandStr = in.fieldNames().next(); //Название первого поля в объектке (command)
+            if (in.get(commandStr).isArray()) { //Пытаемся получить массив [arg1,arg2]
                 for(JsonNode arg : in.get(commandStr)) {
-                    args.add(arg.asText());
+                    args.add(arg.asText()); //читаем всё как текст
+                    //TODO брать только строки, исключить объекты и пр.
                 }
             }
         } catch (Exception e) {
@@ -90,10 +93,13 @@ public class MksControl {
         Call c = commandsList.get(commandStr);
         if (c == null) return ret.err("Command not found:"+commandStr);
 
+
+        //Проверка параметров у вызываемого java метода
         int cnt = c.method.getParameterCount();
-        if (cnt <= args.size()) {
+        if (cnt <= args.size()) { //передаваемый методов должно быть не меньше, чем нужно
             Arg arg;
             for (int i = 0; i < cnt; i++) {
+                //парсим все входные параметры как можем
                 String ps = args.get(i);
                 Integer pi = null;
                 Double pd = null;
@@ -113,8 +119,10 @@ public class MksControl {
             Vector<Object> sendArgs = new Vector<Object>();
             Class<?>[] types = c.method.getParameterTypes();
             int parIndex = 0;
+            //Пробуем натянуть входные параметры на метод явы
             for (Class<?> t : types) {
                 arg = argList.get(parIndex);
+                //Как string/boolean парсится в любом случае если нет Integer или Float всё должно упасть
                 if (t.equals(String.class)) {
                     sendArgs.add(arg.stringValue);
                 } else if (t.equals(Boolean.class) || t.getName().equals("boolean")) {
@@ -142,6 +150,7 @@ public class MksControl {
             ret.err(errStr);
             if (!error) {
                 try {
+                    //Вызов метода.
                     retObj = c.method.invoke(c.object, sendArgs.toArray());
                 } catch (Exception e) {
                     StringWriter errors = new StringWriter();
