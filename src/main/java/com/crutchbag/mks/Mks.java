@@ -2,7 +2,6 @@ package com.crutchbag.mks;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
