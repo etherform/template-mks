@@ -1,4 +1,4 @@
-package com.ric.mks;
+package com.crutchbag.mks;
 
 import org.springframework.context.annotation.Configuration;
 

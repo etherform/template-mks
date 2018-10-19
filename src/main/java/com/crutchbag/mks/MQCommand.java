@@ -1,4 +1,4 @@
-package com.ric.mks;
+package com.crutchbag.mks;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

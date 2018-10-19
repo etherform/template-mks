@@ -1,4 +1,4 @@
-package com.ric.mks;
+package com.crutchbag.mks;
 
 public class CommandReturn {
     public String body;

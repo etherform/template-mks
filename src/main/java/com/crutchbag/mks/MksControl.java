@@ -1,4 +1,4 @@
-package com.ric.mks;
+package com.crutchbag.mks;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

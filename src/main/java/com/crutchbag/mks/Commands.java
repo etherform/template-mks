@@ -1,4 +1,4 @@
-package com.ric.mks;
+package com.crutchbag.mks;
 
 public class Commands {
 
@@ -58,6 +58,11 @@ public class Commands {
         for (String s : mks.getCommands()) cmds += "\""+s+"\",";
         cmds = cmds.substring(0, cmds.length() - 1);
         return "{\"commands\":["+cmds+"]}";
+    }
+
+    @MQCommand
+    public String sendAndRecTest(String queue, String msg) {
+        return mks.sendAndReceive(queue, msg);
     }
 
 }

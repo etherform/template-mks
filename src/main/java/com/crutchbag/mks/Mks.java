@@ -1,4 +1,4 @@
-package com.ric.mks;
+package com.crutchbag.mks;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -9,6 +9,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +26,7 @@ public class Mks {
     //private HashMap<String, Object> args;
 
     @Autowired
-    private AmqpTemplate amqp;
+    private RabbitTemplate amqp;
 
     private MksControl mksControl;
 
@@ -35,6 +36,14 @@ public class Mks {
 
     public void feed(Object food) {
         mksControl.feed(food);
+    }
+
+
+    @Bean
+    public RabbitTemplate amqpTemplate(ConnectionFactory cf) {
+        RabbitTemplate tpl = new RabbitTemplate(cf);
+        tpl.setReplyTimeout(1000*1000);
+        return tpl;
     }
 
     public Mks(@Value("${name}") String appName) {
@@ -55,6 +64,12 @@ public class Mks {
 
     public void sendOut(String str) {
         amqp.convertAndSend(outQueueName, str);
+    }
+
+    public String sendAndReceive(String queue, String str) {
+        Message msg = new Message(str.getBytes(), new MessageProperties());
+        return new String(amqp.sendAndReceive(queue, msg).getBody());
+        //return "ok";
     }
 
     //public String getId() {return id;}
@@ -80,9 +95,16 @@ public class Mks {
     @RabbitListener(queues = "#{inputQueue.name}")
     private void cmdReceive(Message message) {
         String msg = new String(message.getBody());
+        String reply_to = message.getMessageProperties().getReplyTo();
         CommandReturn ret = mksControl.control(msg);
         if (!ret.error) {
-            sendOut(ret.log);
+            if (reply_to != null) {
+                sendLog("Reply to "+reply_to+" \nMessage:\n"+ret.body);
+                Message replymsg = new Message(ret.body.getBytes(), new MessageProperties());
+                replymsg.getMessageProperties().setCorrelationId(message.getMessageProperties().getCorrelationId());
+                amqp.send(reply_to, replymsg);
+            }
+            sendOut(ret.body);
             sendLog(ret.log);
             return;
         }
