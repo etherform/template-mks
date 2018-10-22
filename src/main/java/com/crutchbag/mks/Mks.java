@@ -113,7 +113,7 @@ public class Mks {
 
     public Set<String> getCommands() {
         HashSet<String> ret = new HashSet<String>();
-        ret.addAll(mksControl.getCommandList());
+        ret.addAll(mksControl.getCommandsHashMap().keySet());
         return ret;
     }
 

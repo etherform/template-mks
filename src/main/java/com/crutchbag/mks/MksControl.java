@@ -44,12 +44,12 @@ public class MksControl {
     }
 
     private CommandReturn ret = new CommandReturn();
-    private HashMap<String, Call> commandsList;
+    private HashMap<String, Call> commandsHashMap;
     private ArrayList<Arg> argList;
     private ObjectMapper om = new ObjectMapper();
 
     public MksControl() {
-        commandsList = new HashMap<String, Call>();
+        commandsHashMap = new HashMap<String, Call>();
         argList = new ArrayList<Arg>(10);
         for (int i = 0; i < 10; i++) argList.add(new Arg());
     }
@@ -58,13 +58,13 @@ public class MksControl {
         Method[] ms = tp.getClass().getMethods();
         for (Method m : ms) {
             if (m.isAnnotationPresent(MQCommand.class)) {
-                commandsList.put(m.getName(), new Call(tp, m));
+                commandsHashMap.put(m.getName(), new Call(tp, m));
             }
         }
     }
 
-    public Set<String> getCommandList() {
-        return commandsList.keySet();
+    public HashMap<String, Call> getCommandsHashMap() {
+        return commandsHashMap;
     }
 
     public String parseError(int index, String value, String asWhat) {
@@ -87,7 +87,7 @@ public class MksControl {
             return ret.err("Json parsing error. Json is:"+msg);
         }
 
-        Call c = commandsList.get(commandStr);
+        Call c = commandsHashMap.get(commandStr);
         if (c == null) return ret.err("Command not found:"+commandStr);
 
         int cnt = c.method.getParameterCount();
