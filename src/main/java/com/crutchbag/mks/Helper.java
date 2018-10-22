@@ -30,4 +30,9 @@ class Helper {
 		return gson.toJson(c);
 	}
 	
+	public static String commandListToJSON(List<Command> lc) {
+		Gson gson = new Gson();
+		return gson.toJson(lc);
+	}
+	
 }

@@ -64,28 +64,19 @@ public class MksControl {
             }
         }
     }
-
+    
+    //leaving this here for future use (if any)
     public HashMap<String, Call> getCommandsHashMap() {
         return commandsHashMap;
     }
-    
-    /**
-    public ObjectNode getCommandArgs(String cmd) {
-    	Map<String, List<String>> map = new HashMap<String, List<String>>();
-    	
-    	if (commandsHashMap.containsKey(cmd)) {
-    		Call c = commandsHashMap.get(cmd);
-    		List<String> ps = new ArrayList<String>();    		
-    		for (Parameter param : c.method.getParameters()) {
-    			ps.add(param.getType().getName().replace("java.lang.", ""));
-    		}
-    		
-    		map.put("args", ps);
-			map.put("command", Arrays.asList(c.method.getName()));    		
+        
+    public String getCommandsList() {    	
+    	List<Command> cmdlist = new ArrayList<>();
+    	for (HashMap.Entry<String, Call> entry : commandsHashMap.entrySet()) {
+    		cmdlist.add(new Command(entry.getKey(), null));
     	}
-    	return Helper.mapToJSON(map);
+    	return Helper.commandListToJSON(cmdlist);
     }
-	*/
     
     public String getCommandArgs(String cmd) {    	
     	if (commandsHashMap.containsKey(cmd)) {

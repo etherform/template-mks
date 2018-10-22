@@ -111,10 +111,8 @@ public class Mks {
         sendLog(ret.log);
     }
 
-    public Set<String> getCommands() {
-        HashSet<String> ret = new HashSet<String>();
-        ret.addAll(mksControl.getCommandsHashMap().keySet());
-        return ret;
+    public String getCommands() {
+        return mksControl.getCommandsList();
     }
     
     public String getArgs(String cmd) {
