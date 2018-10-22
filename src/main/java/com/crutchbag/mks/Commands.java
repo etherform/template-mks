@@ -41,6 +41,11 @@ public class Commands {
     public String test3(Integer a, Double b, Boolean c) {
         return "Run test3: arg1:"+a+" arg2:"+b+" arg3:"+c;
     }
+    
+    @MQCommand
+    public String getArgs(String a) {
+        return mks.getArgs(a);
+    }
 
     @MQCommand
     public String ping() {

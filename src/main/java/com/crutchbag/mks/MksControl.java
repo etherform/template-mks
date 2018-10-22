@@ -3,13 +3,16 @@ package com.crutchbag.mks;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import java.util.Vector;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class MksControl {
 
@@ -65,6 +68,22 @@ public class MksControl {
 
     public HashMap<String, Call> getCommandsHashMap() {
         return commandsHashMap;
+    }
+    
+    public ObjectNode getCommandArgs(String cmd) {
+    	Map<String, List<String>> map = new HashMap<String, List<String>>();
+    	
+    	if (commandsHashMap.containsKey(cmd)) {
+    		Call c = commandsHashMap.get(cmd);
+    		List<String> ps = new ArrayList<String>();    		
+    		for (Parameter param : c.method.getParameters()) {
+    			ps.add(param.getType().getName().replace("java.lang.", ""));
+    		}
+    		
+    		map.put("args", ps);
+			map.put("command", Arrays.asList(c.method.getName()));    		
+    	}
+    	return Helper.MapToJSON(map);
     }
 
     public String parseError(int index, String value, String asWhat) {

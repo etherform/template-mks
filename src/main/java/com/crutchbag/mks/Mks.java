@@ -116,7 +116,11 @@ public class Mks {
         ret.addAll(mksControl.getCommandsHashMap().keySet());
         return ret;
     }
-
+    
+    public String getArgs(String cmd) {
+    	return mksControl.getCommandArgs(cmd).toString();
+    }
+    
     @Bean
     private Queue inputQueue() {
         return new Queue(controlQueueIn, false, false, false);
