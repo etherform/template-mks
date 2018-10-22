@@ -5,14 +5,13 @@ import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Vector;
+
+import com.crutchbag.mks.Helper.Command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class MksControl {
 
@@ -70,6 +69,7 @@ public class MksControl {
         return commandsHashMap;
     }
     
+    /**
     public ObjectNode getCommandArgs(String cmd) {
     	Map<String, List<String>> map = new HashMap<String, List<String>>();
     	
@@ -83,9 +83,24 @@ public class MksControl {
     		map.put("args", ps);
 			map.put("command", Arrays.asList(c.method.getName()));    		
     	}
-    	return Helper.MapToJSON(map);
+    	return Helper.mapToJSON(map);
     }
-
+	*/
+    
+    public String getCommandArgs(String cmd) {    	
+    	if (commandsHashMap.containsKey(cmd)) {
+    		List<String> s = new ArrayList<>();
+    		Call c = commandsHashMap.get(cmd);
+    		for (Parameter param : c.method.getParameters()) {
+    			s.add(param.getType().getSimpleName());
+    		}
+    		Command command = new Command(cmd, s);
+    		return Helper.commandToJSON(command);
+    	} else {
+    		return "Command not found.";
+    	}
+    }
+    
     public String parseError(int index, String value, String asWhat) {
         return "Parameter #"+index+" value '"+value+"' won't parsed as "+asWhat+"\n";
     }

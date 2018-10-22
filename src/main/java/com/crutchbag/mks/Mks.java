@@ -118,7 +118,7 @@ public class Mks {
     }
     
     public String getArgs(String cmd) {
-    	return mksControl.getCommandArgs(cmd).toString();
+    	return mksControl.getCommandArgs(cmd);
     }
     
     @Bean
