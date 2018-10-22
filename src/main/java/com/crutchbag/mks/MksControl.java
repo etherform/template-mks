@@ -92,6 +92,20 @@ public class MksControl {
     	}
     }
     
+    public String getCommandsWithArgs() {
+    	List<Command> cmdlist = new ArrayList<>();
+    	for (HashMap.Entry<String, Call> entry : commandsHashMap.entrySet()) {
+    		if (entry.getValue().method.getParameterCount() == 0) {
+    			cmdlist.add(new Command(entry.getKey(), null));
+    		} else {
+    			List<String> ls = new ArrayList<>();
+    			for (Parameter param : entry.getValue().method.getParameters()) ls.add(param.getType().getSimpleName());
+    			cmdlist.add(new Command(entry.getKey(), ls));
+    		}
+    	}
+    	return Helper.commandListToJSON(cmdlist);
+    }
+    
     public String parseError(int index, String value, String asWhat) {
         return "Parameter #"+index+" value '"+value+"' won't parsed as "+asWhat+"\n";
     }

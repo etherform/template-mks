@@ -42,10 +42,6 @@ public class Commands {
         return "Run test3: arg1:"+a+" arg2:"+b+" arg3:"+c;
     }
     
-    @MQCommand
-    public String getArgs(String a) {
-        return mks.getArgs(a);
-    }
 
     @MQCommand
     public String ping() {
@@ -58,8 +54,18 @@ public class Commands {
     }
 
     @MQCommand
-    public String getCommands() {
-        return mks.getCommands();
+    public String getCommandsList() {
+        return mks.getCommandsList();
+    }
+    
+    @MQCommand
+    public String getCommandArgs(String a) {
+        return mks.getCommandArgs(a);
+    }
+    
+    @MQCommand
+    public String getCommandsWithArgs() {
+    	return mks.getCommandsWithArgs();
     }
 
     @MQCommand

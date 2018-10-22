@@ -1,7 +1,5 @@
 package com.crutchbag.mks;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
@@ -111,12 +109,16 @@ public class Mks {
         sendLog(ret.log);
     }
 
-    public String getCommands() {
+    public String getCommandsList() {
         return mksControl.getCommandsList();
     }
     
-    public String getArgs(String cmd) {
+    public String getCommandArgs(String cmd) {
     	return mksControl.getCommandArgs(cmd);
+    }
+    
+    public String getCommandsWithArgs() {
+    	return mksControl.getCommandsWithArgs();
     }
     
     @Bean
