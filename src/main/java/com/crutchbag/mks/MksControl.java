@@ -110,6 +110,19 @@ public class MksControl {
         return "Parameter #"+index+" value '"+value+"' won't parsed as "+asWhat+"\n";
     }
 
+    /**TODO parse incoming JSON assuming that all we need to process is
+     * {
+     * 	"type" :[								\\ e.g. "command"
+     *		{
+     *		 "name" : "linkToMethod",
+     *		 "args" : "parameter array"
+     *		}
+     *	]
+     * }
+     * 
+     * example: {"command" : [{"name" : "test3", "args" : ["1", "1.5", "true"]}]}
+     * shortest example: {"command" : [{ "name" : "ping" }]}
+     */
     public CommandReturn control(String msg) {
         String commandStr = null;
         ArrayList<String> args = new ArrayList<String>(10);
