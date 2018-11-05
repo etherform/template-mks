@@ -9,6 +9,7 @@ import com.crutchbag.mks.amqp.MQCommand;
 import com.crutchbag.mks.amqp.MQConfig;
 import com.crutchbag.mks.amqp.MQSender;
 import com.crutchbag.mks.util.MksHelper.Call;
+import com.crutchbag.mks.util.MksLogger;
 import com.crutchbag.mks.util.MksParser;
 
 /* This is a microservice template class.
@@ -29,6 +30,9 @@ public class MksTemplate {
     @Autowired
     protected MksController controller;
 
+    @Autowired
+    protected MksLogger logger;
+
     @Bean
     public Map<String, Call> getCallMap() {
         return parser.parseAnnotatedMethods(this, MQCommand.class);
@@ -37,6 +41,7 @@ public class MksTemplate {
     /*
      * Below is the block of @MQCommand methods
      */
+
     @MQCommand
     public void setInputQueue(String s) {
         mqconfig.setInputQueueName(s);
@@ -50,6 +55,16 @@ public class MksTemplate {
     @MQCommand
     public void setOutputQueue(String s) {
         mqconfig.setOutputQueueName(s);
+    }
+
+    @MQCommand
+    public void enableLog() {
+        logger.enable();
+    }
+
+    @MQCommand
+    public void disableLog() {
+        logger.disable();
     }
 
     @MQCommand

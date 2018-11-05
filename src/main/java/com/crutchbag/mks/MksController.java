@@ -59,41 +59,67 @@ public class MksController {
         return parser.convertObjectToJson(commandList);
     }
 
-    public void control(String json) throws InvocationTargetException, IllegalAccessException, InstantiationException, NoSuchMethodException {
+    public void control(String json) {
+        // first of all callMap must not be empty otherwise there's no point of going further
+        if (callMap.size() == 0) {
+            logger.logError("There are no methods exposed for invocation.");
+            return;
+        }
+
         // parse incoming JSON
         List<Command> commandList = parser.parseCommandListFromMessage(json);
-        if (commandList ==  null)
+        if (commandList.isEmpty()) {
+            logger.logError("JSON parsing failed.");
             return;
+        }
 
         for (Command command : commandList) {
+            if (command.name == null || command.name.isEmpty()) {
+                logger.logError("JSON parsing failed. Command field is absent or blank.");
+                return;
+            }
             // checking if command(s) is registered as exposed method
             Call c = callMap.get(command.name);
             if (c == null) {
-                logger.logError(command.name + " is not recognized as a command.");
+                logger.logError(command.name.concat(" is not recognized as a command."));
             } else {
-                System.out.println("[x] Running command: "+command.name);
+                logger.logInfo("Attemping to run command:", command.name);
                 @SuppressWarnings("unchecked")
                 List<Object> argList = (List<Object>) command.args; // it should always be a list at this point
                 Parameter[] declaredArgs = c.method.getParameters();
 
-                // don't even start args processing if don't need them
-                if (argList.size() == declaredArgs.length && declaredArgs.length == 0) {
-                    c.method.invoke(c.object, argList.toArray()); // empty array here
-                } else  if (argList.size() != declaredArgs.length) { // don't even start args processing if arg count doesn't match
-                    logger.logError("Failed to run command: "+command.name+". With provided amount of args.");
+                // don't even start args processing if arg count doesn't match
+                if (argList.size() != declaredArgs.length) {
+                    logger.logError("Amount of args provided is incorrect. Failed to run command:", command.name);
+                    // or if we don't need any
+                } else if (argList.size() == declaredArgs.length && declaredArgs.length == 0) {
+                    logger.logInfo("No args required. Attempting method invocation.");
+                    executeCommand(c, argList.toArray()); // empty array here
                 } else {
-                    System.out.println("[x] Processing arguments.");
-                    // processArgs() checks if they are of correct type for requested method, converts them to proper type for usage
-                    Object convertedArgs = parser.processArgs(declaredArgs, argList.toArray());
+                    logger.logInfo("Args required. Attempting args processing.");
+                    // processArgs() checks if args are of correct type for requested method & converts to proper type for usage
+                    Object[] convertedArgs = parser.processArgs(declaredArgs, argList.toArray());
                     if (convertedArgs != null) {
-                        System.out.println("[x] Invoking method.");
-                        c.method.invoke(c.object, convertedArgs);
-                        System.out.println("[x] Finished.");
+                        logger.logInfo("Attempting method invocation.");
+                        executeCommand(c, convertedArgs);
                     }
                 }
             }
-
         }
     }
 
+    private void executeCommand(Call c, Object[] args) {
+        try {
+            if (args.length == 0) {
+                c.method.invoke(c.object);
+            } else {
+                c.method.invoke(c.object, args);
+            }
+            logger.logInfo("Method invoked.");
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            logger.logError("Expected number of arguments:", c.method.getParameterCount());
+            logger.logError("Args object is:", parser.convertObjectToJson(args));
+            logger.logException("Failed to invoke method: "+c.method.getName(), e);
+        }
+    }
 }

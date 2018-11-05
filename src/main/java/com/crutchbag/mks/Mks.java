@@ -16,35 +16,35 @@ public class Mks extends MksTemplate {
 
     @MQCommand
     public void test(String a) {
-        sender.sendLog("Run test: arg:"+a);
+        sender.sendOutput("Run test: arg:" + a);
     }
 
     @MQCommand
     public void test2(String a, String b) {
-        sender.sendLog("Run test2: arg1:"+a+" arg2:"+b);
+        sender.sendOutput("Run test2: arg1:" + a + " arg2:" + b);
     }
 
     @MQCommand
     public void test3(Integer a, Double b, Boolean c) {
-        sender.sendLog("Run test3: arg1:"+a+" arg2:"+b+" arg3:"+c);
+        sender.sendOutput("Run test3: arg1:" + a + " arg2:" + b + " arg3:" + c);
     }
 
     @MQCommand
     public void test4(List<Integer> list) {
         String s = "Got a list conaining: ";
         for (Integer l : list) {
-            s = s.concat(l+", ");
+            s = s.concat(l + ", ");
         }
-        sender.sendLog("Run test4 command. "+s);
+        sender.sendOutput("Run test4 command. "+ s);
     }
 
     @MQCommand
     public void test5(Double[] dArray) {
         String s = "Got an array conaining: ";
         for (Double d : dArray) {
-            s = s.concat(d+", ");
+            s = s.concat(d + ", ");
         }
-        sender.sendLog("Run test5 command. "+s);
+        sender.sendOutput("Run test5 command. " + s);
     }
 
     @MQCommand
@@ -54,6 +54,6 @@ public class Mks extends MksTemplate {
 
     @MQCommand
     public void ping() {
-        sender.sendLog("pong");
+        sender.sendOutput("pong");
     }
 }

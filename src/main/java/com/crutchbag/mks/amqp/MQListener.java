@@ -1,6 +1,5 @@
 package com.crutchbag.mks.amqp;
 
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.amqp.core.Message;
@@ -26,10 +25,11 @@ public class MQListener {
     private Queue inputQueue;
 
     @RabbitListener(queues = "#{inputQueue.name}")
-    private void onMessage(Message msg) throws InvocationTargetException, IllegalAccessException, InstantiationException, NoSuchMethodException, SecurityException, IllegalArgumentException {
+    private void onMessage(Message msg) {
         String body = new String(msg.getBody(), StandardCharsets.UTF_8);
-        System.out.println("[x] Message recieved: "+body);
-        //logger.logInfo("Message received: "+body);
+        logger.logInfo("#! Message received:", body);
         controller.control(body);
+        logger.logInfo("#! Message processing finished.");
+        logger.forceSend(); // if second activator wasn't found, but log message is formed force send it from here
     }
 }

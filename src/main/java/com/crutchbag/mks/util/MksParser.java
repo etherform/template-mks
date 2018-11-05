@@ -3,7 +3,7 @@ package com.crutchbag.mks.util;
 import java.beans.PropertyEditor;
 import java.beans.PropertyEditorManager;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
@@ -30,8 +30,7 @@ public class MksParser {
     private MksLogger logger;
 
     public String convertObjectToJson(Object obj) {
-        String s = new Gson().toJson(obj);
-        return s;
+        return new Gson().toJson(obj);
     }
 
     public Map<String, Call> parseAnnotatedMethods(Object obj, Class<? extends Annotation> a) {
@@ -44,83 +43,102 @@ public class MksParser {
         return map;
     }
 
-
     public List<Command> parseCommandListFromMessage(@NonNull String json) {
+        List<Command> parsedCommandList = new ArrayList<>();
+
         // parse JSON to an Object first to see if it's a collection, then parse it as a proper class
         Object o = new Object();
         try {
             o = new Gson().fromJson(json, Object.class);
         } catch (JsonSyntaxException e) {
-            e.printStackTrace();
-            return null;
+            logger.logException("Failed to parse JSON to an object.", e);
+            return parsedCommandList;
         }
-        List<Command> parsedCommandList = new ArrayList<>();
         if (o instanceof Collection<?>) {
-            Command[] commandArray = new Gson().fromJson(json, Command[].class);
-            for (Command command : commandArray) {
-                parsedCommandList.add(new Command(command.name, parseArgsObject(command.args)));
+            logger.logInfo("Provided JSON supposedly contains multiple commands.");
+            try {
+                Command[] commandArray = new Gson().fromJson(json, Command[].class);
+                for (Command command : commandArray) {
+                    parsedCommandList.add(new Command(command.name, parseArgsObject(command.args)));
+                }
+            } catch (JsonSyntaxException e) {
+                logger.logException("Failed to parse commands from JSON.", e);
+                return parsedCommandList;
             }
         } else {
-            Command command = new Gson().fromJson(json, Command.class);
-            parsedCommandList.add(new Command(command.name, parseArgsObject(command.args)));
+            logger.logInfo("Provided JSON supposedly contains a single command.");
+            try {
+                Command command = new Gson().fromJson(json, Command.class);
+                parsedCommandList.add(new Command(command.name, parseArgsObject(command.args)));
+            } catch (JsonSyntaxException e) {
+                logger.logException("Failed to parse commands from JSON.", e);
+                return parsedCommandList;
+            }
         }
 
-        System.out.println("[x] Json parsing complete.");
+        logger.logInfo("Json parsing complete. Got:", parsedCommandList);
         return parsedCommandList;
     }
 
     @SuppressWarnings("unchecked")
-    public Object parseArgsObject(Object o){
+    public Object parseArgsObject(Object o){    // this just checks if we got a list of strings or a single string as an arg
         List<Object> args = new ArrayList<>();
-        if (o == null) // if no args return empty list
+        if (o == null)
             return args;
-        else if (o instanceof Collection<?>) {    // checking if multiple args provided
+        else if (o instanceof Collection<?>) {
             List<Object> objList = (List<Object>) o;
             for (Object obj : objList) {
                 args.add(obj);
             }
-        } else {    // single arg provided
+        } else {
             args.add(o);
         }
 
         return args;
     }
 
-    // have to import java.beans for this, but this supports both basic classes and primitives so it's worth it
+    // have to import java.beans for this, but this supports both basic classes and primitive types so it's worth it
     public Object convertBasicClass(Class<?> targetType, String s) {
-        if (s.getClass() == targetType)
+        if (s.getClass() == targetType) // if we need string type return it right away
             return s;
 
         PropertyEditor editor = PropertyEditorManager.findEditor(targetType);
         try {
             editor.setAsText(s);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.logException("Failed to convert arg to expected type.", e);
             return null;
         }
-        System.out.println("[x] -> Argument conversion completed.");
         return editor.getValue();
     }
 
     @SuppressWarnings("unchecked")
-    public Object processArgs(Parameter[] declaredArgs, Object[] argsArray) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    public Object[] processArgs(Parameter[] declaredArgs, Object[] argsArray) {
         List<Object> processedArgs = new ArrayList<>();
+        Boolean isCollection;
+        Boolean isArray;
 
+        logger.logInfo("Required args amount:", declaredArgs.length);
         for (int i = 0; i < declaredArgs.length; i++) {
-            System.out.println("[x] -> Global Iterator: "+i);
-            // check if method expects collection as an argument
-            if (Collection.class.isAssignableFrom(declaredArgs[i].getType())) {
-                System.out.println("[x] -> Collection type argument found.");
-                ParameterizedType pt = (ParameterizedType) declaredArgs[i].getParameterizedType(); // get type of args inside collection
-                if (pt.getActualTypeArguments().length != 1) // TODO put error here
+            logger.logInfo("Iterator:", i);
+            logger.logInfo("Attempting to convert to:", declaredArgs[i].getType().getSimpleName());
+            // check if method expects collection or array as an argument
+            isCollection = Collection.class.isAssignableFrom(declaredArgs[i].getType());
+            isArray = declaredArgs[i].getType().isArray();
+            if ( isCollection || isArray) {
+                if (!(argsArray[i] instanceof Collection<?>)) {
+                    logger.logError("Collection expected, but wasn't provided. Provided:", convertObjectToJson(argsArray[i]));
                     return null;
-                else if (!(argsArray[i] instanceof Collection<?>)) // collection expected, but wasn't provided
-                    return null;
-                else {
-                    List<Object> args = (List<Object>) argsArray[i]; // should be a list<String> at this point
-                    List<Object> objList = new ArrayList<>(); // new list to store processed args
-                    Class<?> cls = (Class<?>) pt.getActualTypeArguments()[0]; // another way is  Class.forname(typeName) but this seems to be better
+                }
+                List<Object> args = (List<Object>) argsArray[i];
 
+                if (isCollection) {
+                    ParameterizedType pt = (ParameterizedType) declaredArgs[i].getParameterizedType(); // get collection element type
+                    if (pt.getActualTypeArguments().length != 1) // TODO put error here
+                        return null;
+                    Class<?> cls = (Class<?>) pt.getActualTypeArguments()[0]; // another way is Class.forname(typeName) but this seems to be better
+                    logger.logInfo("Element type is:", cls.getSimpleName());
+                    List<Object> objList = new ArrayList<>(); // new list to store processed args
                     for (Object arg : args) {
                         Object convertedArg = convertBasicClass(cls, (String) arg);
                         if (convertedArg == null)
@@ -129,31 +147,21 @@ public class MksParser {
                             objList.add(convertedArg);
                         }
                     }
-
                     processedArgs.add(objList);
-                }
-                // check if method expects array as an argument
-            } else if (declaredArgs[i].getType().isArray()) {
-                System.out.println("[x] -> Array type argument found.");
-                if (!(argsArray[i] instanceof Collection<?>)) // array expected, but wasn't provided
-                    return null;
-                else {
-                    List<Object> args = (List<Object>) argsArray[i]; // should be a list<String> at this point
-                    List<Object> objList = new ArrayList<>(); // new list to store processed args
-                    Class<?> cls = declaredArgs[i].getType().getComponentType();
-
-                    for (Object arg : args) {
-                        Object convertedArg = convertBasicClass(cls, (String) arg);
+                } else {
+                    Class<?> cls = declaredArgs[i].getType().getComponentType(); // get array element type
+                    Object objArray = Array.newInstance(cls, args.size());
+                    for (int j = 0; j < args.size(); j++) {
+                        Object convertedArg = convertBasicClass(cls, (String) args.toArray()[j]);
                         if (convertedArg == null)
                             return null;
                         else {
-                            objList.add(convertedArg);
+                            Array.set(objArray, j, convertedArg);
                         }
                     }
-
-                    processedArgs.add(objList.toArray());
+                    processedArgs.add(objArray);
                 }
-                // at this point argsArray[i] should be an argument of basic class or primitive type
+                logger.logInfo("Arg conversion complete.");
             } else {
                 Class<?> cls = declaredArgs[i].getType();
                 Object convertedArg = convertBasicClass(cls, (String) argsArray[i]);
@@ -161,17 +169,12 @@ public class MksParser {
                     return null;
                 else {
                     processedArgs.add(convertedArg);
+                    logger.logInfo("Arg conversion complete.");
                 }
             }
         }
 
-        System.out.println("[x] Argument processing complete.");
-
-        // dumb check here, might figure another way of doing this
-        // for some reason error is thrown when you invoke a method with Object[] array that contains one item in it
-        if (processedArgs.size() == 1)
-            return processedArgs.get(0);
-        else
-            return processedArgs.toArray();
+        logger.logInfo("Args processing complete.");
+        return processedArgs.toArray();
     }
 }

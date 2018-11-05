@@ -24,14 +24,10 @@ public class MQSender {
      */
 
     public void sendLog(String s) {
-        System.out.println("[x] Sending message: "+s);
-        System.out.println("[x] Output queue: "+outputQueue.getName());
-        amqp.convertAndSend(outputQueue.getName(), s);
+        amqp.convertAndSend(logQueue.getName(), s);
     }
 
     public void sendOutput(String s) {
-        System.out.println("[x] Sending message: "+s);
-        System.out.println("[x] Output queue: "+logQueue.getName());
-        amqp.convertAndSend(logQueue.getName(), s);
+        amqp.convertAndSend(outputQueue.getName(), s);
     }
 }

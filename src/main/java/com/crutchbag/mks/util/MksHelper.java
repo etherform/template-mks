@@ -2,6 +2,7 @@ package com.crutchbag.mks.util;
 
 import java.lang.reflect.Method;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -19,7 +20,7 @@ public final class MksHelper {
         public Method method;
     }
 
-    // can't use @AllArgsConstructor because constructor needs to accept null field for this class
+    // can't use @AllArgsConstructor or @Data because constructor needs to accept null field for this class
     public static class Command {
 
         @SerializedName("command")
@@ -34,6 +35,11 @@ public final class MksHelper {
         public Command(String s, Object o) {
             name = s;
             args = o;
+        }
+
+        @Override
+        public String toString() {
+            return new Gson().toJson(this);
         }
     }
 
