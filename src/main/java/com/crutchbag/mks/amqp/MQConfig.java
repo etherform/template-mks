@@ -29,11 +29,15 @@ public class MQConfig {
     @Value("#{'${name}'.concat('_output')}")
     private String outputQueueName;
 
-
-    // TODO connectionFactury configuration
     @Bean
-    public ConnectionFactory connectionFactory(@Value("localhost") String host) {
-        return new CachingConnectionFactory(host);
+    public ConnectionFactory connectionFactory(
+            @Value("${amqp.host}") String host,
+            @Value("${amqp.user}") String user,
+            @Value("${amqp.password}") String password) {
+        CachingConnectionFactory cf = new CachingConnectionFactory(host);
+        cf.setUsername(user);
+        cf.setPassword(password);
+        return cf;
     }
 
     @Bean
