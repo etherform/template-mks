@@ -25,7 +25,7 @@ public class MksLogger {
     private static final int SBSIZE = 1000;
     private static final String INFOPREFIX = "INFO: ";
     private static final String ERRORPREFIX = "ERROR: ";
-    private static final String EXCEPTION = "EXCEPTION THROWN:";
+    private static final String EXCEPTION = "EXCEPTION THROWN: ";
     private static final String ACTIVATOR = "#!";
 
     public void enable() {
@@ -39,8 +39,7 @@ public class MksLogger {
 
     private void toggleState() {
         if (!awake) {
-            msg.append("### LOGGING MESSAGE STARTED ###");
-            msg.append(System.lineSeparator());
+            msg.append("### LOGGING MESSAGE STARTED ###\n");
             awake = true;
         } else {
             msg.append("### LOGGING MESSAGE FINISHED ###");
@@ -60,18 +59,15 @@ public class MksLogger {
         if (isEnabled) {
             if (awake) {
                 if (s.contains(ACTIVATOR)) {
-                    msg.append(INFOPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(System.lineSeparator());
+                    msg.append(INFOPREFIX.concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
                     toggleState();
                 } else {
-                    msg.append(INFOPREFIX.concat(s));
-                    msg.append(System.lineSeparator());
+                    msg.append(INFOPREFIX.concat(s).concat("\n"));
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
-                    msg.append(INFOPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(System.lineSeparator());
+                    msg.append(INFOPREFIX.concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
                 }
             }
 
@@ -84,19 +80,19 @@ public class MksLogger {
                 if (s.contains(ACTIVATOR)) {
                     msg.append(INFOPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
                     msg.append(obj);
-                    msg.append(System.lineSeparator());
+                    msg.append("\n");
                     toggleState();
                 } else {
                     msg.append(INFOPREFIX.concat(s).concat(" "));
                     msg.append(obj);
-                    msg.append(System.lineSeparator());
+                    msg.append("\n");
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
                     msg.append(INFOPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
                     msg.append(obj);
-                    msg.append(System.lineSeparator());
+                    msg.append("\n");
                 }
             }
 
@@ -107,18 +103,15 @@ public class MksLogger {
         if (isEnabled) {
             if (awake) {
                 if (s.contains(ACTIVATOR)) {
-                    msg.append(ERRORPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(System.lineSeparator());
+                    msg.append(ERRORPREFIX.concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
                     toggleState();
                 } else {
-                    msg.append(ERRORPREFIX.concat(s));
-                    msg.append(System.lineSeparator());
+                    msg.append(ERRORPREFIX.concat(s).concat("\n"));
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
-                    msg.append(ERRORPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(System.lineSeparator());
+                    msg.append(ERRORPREFIX.concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
                 }
             }
 
@@ -131,51 +124,42 @@ public class MksLogger {
                 if (s.contains(ACTIVATOR)) {
                     msg.append(ERRORPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
                     msg.append(obj);
-                    msg.append(System.lineSeparator());
+                    msg.append("\n");
                     toggleState();
                 } else {
                     msg.append(ERRORPREFIX.concat(s).concat(" "));
                     msg.append(obj);
-                    msg.append(System.lineSeparator());
+                    msg.append("\n");
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
                     msg.append(ERRORPREFIX.concat(s.replace(ACTIVATOR+" ", "")));
                     msg.append(obj);
-                    msg.append(System.lineSeparator());
+                    msg.append("\n");
                 }
             }
 
         }
     }
 
+    // TODO replace getMessage() with deeper analysis
     public void logException(@NonNull String s, @NonNull Throwable e) {
         if (isEnabled) {
             if (awake) {
-                msg.append(ERRORPREFIX.concat(s));
-                msg.append(System.lineSeparator());
-                msg.append(EXCEPTION);
-                msg.append(System.lineSeparator());
-                msg.append(e.getClass().getCanonicalName());
-                msg.append(System.lineSeparator());
-                msg.append(e.getMessage());
-                msg.append(System.lineSeparator());
+                msg.append(ERRORPREFIX.concat(s).concat("\n"));
+                msg.append(EXCEPTION.concat(e.getClass().getCanonicalName()).concat("\n"));
+                msg.append(e.getMessage().concat("\n"));
             } else {
                 toggleState();
                 msg.append(ERRORPREFIX.concat(s));
-                msg.append(System.lineSeparator());
-                msg.append(EXCEPTION);
-                msg.append(System.lineSeparator());
-                msg.append(e.getClass().getCanonicalName());
-                msg.append(System.lineSeparator());
-                msg.append(e.getMessage());
-                msg.append(System.lineSeparator());
+                msg.append(EXCEPTION.concat(e.getClass().getCanonicalName()).concat("\n"));
+                msg.append(e.getMessage().concat("\n"));
                 toggleState();
             }
         } else {
-            logConsole(ERRORPREFIX.concat(s));
-            logConsole(e.getMessage());
+            logConsole(ERRORPREFIX.concat(s).concat("\n"));
+            e.printStackTrace();
         }
     }
 
