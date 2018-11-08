@@ -22,9 +22,9 @@ public class MksLogger {
     private StringBuilder msg = new StringBuilder(SBSIZE);
 
     private static final int SBSIZE = 1000;
-    private static final String INFOPREFIX = " INFO: ";
-    private static final String ERRORPREFIX = " ERROR: ";
-    private static final String EXCEPTION = " EXCEPTION THROWN: ";
+    private static final String INFOPREFIX = "INFO: ";
+    private static final String ERRORPREFIX = "ERROR: ";
+    private static final String EXCEPTION = "EXCEPTION THROWN: ";
     private static final String ACTIVATOR = "#!";
 
     public void enable() {
@@ -36,12 +36,16 @@ public class MksLogger {
     }
 
     private static String formatDateTime(long time) {
-        return String.format("%1$tY/%1$tm/%1$td %1$tH:%1$tM:%1$tS", time);
+        return String.format("%1$tF %1$tH:%1$tM:%1$tS", time);
     }
 
     private static String formatTimestamp(long time) {
-        String s = String.format("%1$tS.%1$tN", time);
+        String s = String.format("%1$tS.%1$tN ", time);
         return s.substring(0, s.length()-6);
+    }
+
+    private String timestamp() {
+        return formatTimestamp(System.currentTimeMillis()-msgtime);
     }
 
     private void toggleState() {
@@ -63,21 +67,32 @@ public class MksLogger {
         }
     }
 
+    private void appendString(String prefix, String s) {
+        msg.append(timestamp().concat(prefix).concat(s).concat("\n"));
+    }
+
+    private void appendStringObject(String prefix, String s, Object obj) {
+        msg.append(timestamp().concat(INFOPREFIX).concat(s).concat(" "));
+        msg.append(obj);
+        msg.append("\n");
+    }
+
     public void logInfo(@NonNull String s) {
         if (isEnabled) {
+            String prefix = INFOPREFIX;
             if (awake) {
-                String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
                 if (s.contains(ACTIVATOR)) {
-                    msg.append(timestamp.concat(INFOPREFIX).concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendString(prefix, s);
                     toggleState();
                 } else {
-                    msg.append(timestamp.concat(INFOPREFIX).concat(s).concat("\n"));
+                    appendString(prefix, s);
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
-                    String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
-                    msg.append(timestamp.concat(INFOPREFIX).concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendString(prefix, s);
                 }
             }
 
@@ -86,25 +101,20 @@ public class MksLogger {
 
     public void logInfo(@NonNull String s, @NonNull Object obj) {
         if (isEnabled) {
+            String prefix = INFOPREFIX;
             if (awake) {
-                String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
                 if (s.contains(ACTIVATOR)) {
-                    msg.append(timestamp.concat(INFOPREFIX).concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(obj);
-                    msg.append("\n");
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendStringObject(prefix, s, obj);
                     toggleState();
                 } else {
-                    msg.append(timestamp.concat(INFOPREFIX).concat(s).concat(" "));
-                    msg.append(obj);
-                    msg.append("\n");
+                    appendStringObject(prefix, s, obj);
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
-                    String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
-                    msg.append(timestamp.concat(INFOPREFIX).concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(obj);
-                    msg.append("\n");
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendStringObject(prefix, s, obj);
                 }
             }
 
@@ -113,19 +123,20 @@ public class MksLogger {
 
     public void logError(@NonNull String s) {
         if (isEnabled) {
+            String prefix = ERRORPREFIX;
             if (awake) {
-                String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
                 if (s.contains(ACTIVATOR)) {
-                    msg.append(timestamp.concat(ERRORPREFIX).concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendString(prefix, s);
                     toggleState();
                 } else {
-                    msg.append(timestamp.concat(ERRORPREFIX).concat(s).concat("\n"));
+                    appendString(prefix, s);
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
-                    String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
-                    msg.append(timestamp.concat(ERRORPREFIX).concat(s.replace(ACTIVATOR+" ", "")).concat("\n"));
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendString(prefix, s);
                 }
             }
 
@@ -134,25 +145,20 @@ public class MksLogger {
 
     public void logError(@NonNull String s, @NonNull Object obj) {
         if (isEnabled) {
+            String prefix = ERRORPREFIX;
             if (awake) {
-                String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
                 if (s.contains(ACTIVATOR)) {
-                    msg.append(timestamp.concat(ERRORPREFIX).concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(obj);
-                    msg.append("\n");
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendStringObject(prefix, s, obj);
                     toggleState();
                 } else {
-                    msg.append(timestamp.concat(ERRORPREFIX).concat(s).concat(" "));
-                    msg.append(obj);
-                    msg.append("\n");
+                    appendStringObject(prefix, s, obj);
                 }
             } else {
                 if (s.contains(ACTIVATOR)) {
                     toggleState();
-                    String timestamp = formatTimestamp(System.currentTimeMillis()-msgtime);
-                    msg.append(timestamp.concat(ERRORPREFIX).concat(s.replace(ACTIVATOR+" ", "")));
-                    msg.append(obj);
-                    msg.append("\n");
+                    s = s.replace(ACTIVATOR+" ", "");
+                    appendStringObject(prefix, s, obj);
                 }
             }
 
