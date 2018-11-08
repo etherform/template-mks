@@ -18,8 +18,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import com.crutchbag.mks.util.MksHelper.Call;
-import com.crutchbag.mks.util.MksHelper.Command;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 
 
@@ -29,9 +29,7 @@ public class MksParser {
     @Autowired
     private MksLogger logger;
 
-    public String convertObjectToJson(Object obj) {
-        return new Gson().toJson(obj);
-    }
+    private Gson gson = new Gson();
 
     public Map<String, Call> parseAnnotatedMethods(Object obj, Class<? extends Annotation> a) {
         Map<String, Call> map = new HashMap<>();
@@ -43,58 +41,37 @@ public class MksParser {
         return map;
     }
 
-    public List<Command> parseCommandListFromMessage(@NonNull String json) {
-        List<Command> parsedCommandList = new ArrayList<>();
-
-        // parse JSON to an Object first to see if it's a collection, then parse it as a proper class
-        Object o = new Object();
+    @SuppressWarnings("unused")
+    public Boolean isValidJson(@NonNull String s) {
         try {
-            o = new Gson().fromJson(json, Object.class);
-        } catch (JsonSyntaxException e) {
-            logger.logException("Failed to parse JSON to an object.", e);
-            return parsedCommandList;
+            Object o = gson.fromJson(s, Object.class);
+            return true;
+        } catch(JsonSyntaxException e) {
+            logger.logException("Provided JSON is invalid.", e);
+            return false;
         }
-        if (o instanceof Collection<?>) {
-            logger.logInfo("Provided JSON supposedly contains multiple commands.");
-            try {
-                Command[] commandArray = new Gson().fromJson(json, Command[].class);
-                for (Command command : commandArray) {
-                    parsedCommandList.add(new Command(command.name, parseArgsObject(command.args)));
-                }
-            } catch (JsonSyntaxException e) {
-                logger.logException("Failed to parse commands from JSON.", e);
-                return parsedCommandList;
-            }
-        } else {
-            logger.logInfo("Provided JSON supposedly contains a single command.");
-            try {
-                Command command = new Gson().fromJson(json, Command.class);
-                parsedCommandList.add(new Command(command.name, parseArgsObject(command.args)));
-            } catch (JsonSyntaxException e) {
-                logger.logException("Failed to parse commands from JSON.", e);
-                return parsedCommandList;
-            }
-        }
+    }
 
-        logger.logInfo("Json parsing complete. Got:", parsedCommandList);
-        return parsedCommandList;
+    public Boolean isJsonArray(@NonNull String s) {
+        return gson.fromJson(s, JsonElement.class).isJsonArray();
+    }
+
+    public Object convertJsonToPojo(@NonNull String json, @NonNull Class<?> cls) {
+        return gson.fromJson(json, cls);
+    }
+
+    public String convertPojoToJson(Object obj) {
+        return gson.toJson(obj);
     }
 
     @SuppressWarnings("unchecked")
-    public Object parseArgsObject(Object o){    // this just checks if we got a list of strings or a single string as an arg
-        List<Object> args = new ArrayList<>();
+    public Object[] parseCommandArgs(Object o){    // this checks if we got ( no args || single arg || multiple args)
         if (o == null)
-            return args;
-        else if (o instanceof Collection<?>) {
-            List<Object> objList = (List<Object>) o;
-            for (Object obj : objList) {
-                args.add(obj);
-            }
-        } else {
-            args.add(o);
-        }
-
-        return args;
+            return new Object[] {};
+        else if (o instanceof Collection<?>)
+            return ((List<Object>) o).toArray();
+        else
+            return new Object[] { o };
     }
 
     // have to import java.beans for this, but this supports both basic classes and primitive types so it's worth it
@@ -105,7 +82,7 @@ public class MksParser {
         PropertyEditor editor = PropertyEditorManager.findEditor(targetType);
         try {
             editor.setAsText(s);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) { // TODO figure list of more specific exceptions
             logger.logException("Failed to convert arg to expected type.", e);
             return null;
         }
@@ -118,7 +95,7 @@ public class MksParser {
         Boolean isCollection;
         Boolean isArray;
 
-        logger.logInfo("Required args amount:", declaredArgs.length);
+        logger.logInfo("Required arg amount:", declaredArgs.length);
         for (int i = 0; i < declaredArgs.length; i++) {
             logger.logInfo("Iterator:", i);
             logger.logInfo("Attempting to convert to:", declaredArgs[i].getType().getSimpleName());
@@ -127,7 +104,7 @@ public class MksParser {
             isArray = declaredArgs[i].getType().isArray();
             if ( isCollection || isArray) {
                 if (!(argsArray[i] instanceof Collection<?>)) {
-                    logger.logError("Collection expected, but wasn't provided. Provided:", convertObjectToJson(argsArray[i]));
+                    logger.logError("Collection expected, but wasn't provided. Provided:", convertPojoToJson(argsArray[i]));
                     return null;
                 }
                 List<Object> args = (List<Object>) argsArray[i];

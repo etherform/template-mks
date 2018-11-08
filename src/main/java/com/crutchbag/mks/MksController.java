@@ -31,7 +31,7 @@ public class MksController {
         for (String s : callMap.keySet()) {
             commandList.add(new Command(s, null));
         }
-        return parser.convertObjectToJson(commandList);
+        return parser.convertPojoToJson(commandList);
     }
 
     public String getCommandArgs(String s) {
@@ -41,7 +41,7 @@ public class MksController {
             for (Parameter par : c.method.getParameters()) {
                 argsType.add(par.getType().getSimpleName());
             }
-            return parser.convertObjectToJson(new Command(s,argsType));
+            return parser.convertPojoToJson(new Command(s,argsType));
         } else
             return "Command not found.";
     }
@@ -56,61 +56,56 @@ public class MksController {
             }
             commandList.add(new Command(entry.getKey(),argsType));
         }
-        return parser.convertObjectToJson(commandList);
+        return parser.convertPojoToJson(commandList);
     }
 
     public void control(String json) {
-        // first of all callMap must not be empty otherwise there's no point of going further
+        // first of all callMap must not be empty otherwise there's no point in going further
         if (callMap.size() == 0) {
             logger.logError("There are no methods exposed for invocation.");
             return;
         }
 
-        // parse incoming JSON
-        List<Command> commandList = parser.parseCommandListFromMessage(json);
-        if (commandList.isEmpty()) {
-            logger.logError("JSON parsing failed.");
+        // parse incoming JSON to command class
+        Command command = parser.isValidJson(json) && !parser.isJsonArray(json) ? (Command) parser.convertJsonToPojo(json, Command.class) : null;
+        if (command == null || command.name == null || command.name.isEmpty()) {
+            logger.logError("JSON parsing failed. Command field is absent or blank.");
             return;
         }
 
-        for (Command command : commandList) {
-            if (command.name == null || command.name.isEmpty()) {
-                logger.logError("JSON parsing failed. Command field is absent or blank.");
-                return;
-            }
-            // checking if command(s) is registered as exposed method
-            Call c = callMap.get(command.name);
-            if (c == null) {
-                logger.logError(command.name.concat(" is not recognized as a command."));
-            } else {
-                logger.logInfo("Attemping to run command:", command.name);
-                @SuppressWarnings("unchecked")
-                List<Object> argList = (List<Object>) command.args; // it should always be a list at this point
-                Parameter[] declaredArgs = c.method.getParameters();
+        // checking if command(s) is registered as exposed method
+        Call c = callMap.get(command.name);
+        if (c == null) {
+            logger.logError(command.name.concat(" is not recognized as a command."));
+        } else {
+            logger.logInfo("Attemping to run command:", command.name);
 
-                // don't even start args processing if arg count doesn't match
-                if (argList.size() != declaredArgs.length) {
-                    logger.logError("Amount of args provided is incorrect. Failed to run command:", command.name);
-                    // or if we don't need any
-                } else if (argList.size() == declaredArgs.length && declaredArgs.length == 0) {
-                    logger.logInfo("No args required. Attempting method invocation.");
-                    executeCommand(c, argList.toArray()); // empty array here
-                } else {
-                    logger.logInfo("Args required. Attempting args processing.");
-                    // processArgs() checks if args are of correct type for requested method & converts to proper type for usage
-                    Object[] convertedArgs = parser.processArgs(declaredArgs, argList.toArray());
-                    if (convertedArgs != null) {
-                        logger.logInfo("Attempting method invocation.");
-                        executeCommand(c, convertedArgs);
-                    }
+            Object[] parsedArgs = parser.parseCommandArgs(command.args);
+            Parameter[] declaredArgs = c.method.getParameters();
+
+            // don't even start args processing if arg count doesn't match
+            if (parsedArgs.length != declaredArgs.length) {
+                logger.logError("Amount of args provided is incorrect. Failed to run command:", command.name);
+                // or if we don't need any
+            } else if (declaredArgs.length == 0) {
+                logger.logInfo("No args required. Attempting method invocation.");
+                executeCommand(c, null);
+            } else {
+                logger.logInfo("Args required. Attempting args processing.");
+                // processArgs() checks if args are of correct type for requested method & converts to proper type for usage
+                Object[] convertedArgs = parser.processArgs(declaredArgs, parsedArgs);
+                if (convertedArgs != null) {
+                    logger.logInfo("Attempting method invocation.");
+                    executeCommand(c, convertedArgs);
                 }
             }
         }
+
     }
 
     private void executeCommand(Call c, Object[] args) {
         try {
-            if (args.length == 0) {
+            if (args == null) {
                 c.method.invoke(c.object);
             } else {
                 c.method.invoke(c.object, args);
@@ -118,7 +113,7 @@ public class MksController {
             logger.logInfo("Method invoked.");
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             logger.logError("Expected number of arguments:", c.method.getParameterCount());
-            logger.logError("Args object is:", parser.convertObjectToJson(args));
+            logger.logError("Args object is:", parser.convertPojoToJson(args));
             logger.logException("Failed to invoke method: "+c.method.getName(), e);
         }
     }
