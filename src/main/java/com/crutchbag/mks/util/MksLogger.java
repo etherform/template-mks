@@ -72,7 +72,7 @@ public class MksLogger {
     }
 
     private void appendStringObject(String prefix, String s, Object obj) {
-        msg.append(timestamp().concat(INFOPREFIX).concat(s).concat(" "));
+        msg.append(timestamp().concat(prefix).concat(s).concat(" "));
         msg.append(obj);
         msg.append("\n");
     }
