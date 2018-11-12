@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.crutchbag.mks.util.MksHelper.Call;
 import com.crutchbag.mks.util.MksHelper.Command;
-import com.crutchbag.mks.util.MksLogger;
+import com.crutchbag.mks.log.MksLogger;
 import com.crutchbag.mks.util.MksParser;
 
 @Component

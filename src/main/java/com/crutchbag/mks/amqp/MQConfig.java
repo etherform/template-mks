@@ -1,6 +1,5 @@
 package com.crutchbag.mks.amqp;
 
-import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -11,23 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import lombok.Setter;
-
 @EnableRabbit
 @Configuration
 public class MQConfig {
-
-    @Setter
-    @Value("#{'${name}'.concat('_input')}")
-    private String inputQueueName;
-
-    @Setter
-    @Value("#{'${name}'.concat('_log')}")
-    private String logQueueName;
-
-    @Setter
-    @Value("#{'${name}'.concat('_output')}")
-    private String outputQueueName;
 
     @Bean
     public ConnectionFactory connectionFactory(
@@ -41,7 +26,7 @@ public class MQConfig {
     }
 
     @Bean
-    public AmqpAdmin amqpAdmin(ConnectionFactory cf) {
+    public RabbitAdmin amqpAdmin(ConnectionFactory cf) {
         return new RabbitAdmin(cf);
     }
 
@@ -51,17 +36,17 @@ public class MQConfig {
     }
 
     @Bean
-    public Queue inputQueue() {
-        return new Queue(inputQueueName, false, false, false);
+    public Queue inputQueue(@Value("#{'${name}'.concat('_in')}") String queueName) {
+        return new Queue(queueName, false, false, false);
     }
 
     @Bean
-    public Queue logQueue() {
-        return new Queue(logQueueName, false, false, false);
+    public Queue logQueue(@Value("#{'${name}'.concat('_log')}") String queueName) {
+        return new Queue(queueName, false, false, false);
     }
 
     @Bean
-    public Queue outputQueue() {
-        return new Queue(outputQueueName, false, false, false);
+    public Queue outputQueue(@Value("#{'${name}'.concat('_out')}") String queueName) {
+        return new Queue(queueName, false, false, false);
     }
 }

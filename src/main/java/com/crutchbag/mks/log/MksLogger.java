@@ -1,4 +1,4 @@
-package com.crutchbag.mks.util;
+package com.crutchbag.mks.log;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;

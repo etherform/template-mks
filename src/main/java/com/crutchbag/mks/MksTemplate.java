@@ -6,10 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 
 import com.crutchbag.mks.amqp.MQCommand;
-import com.crutchbag.mks.amqp.MQConfig;
+import com.crutchbag.mks.amqp.MQListener;
 import com.crutchbag.mks.amqp.MQSender;
+import com.crutchbag.mks.log.MksLogger;
 import com.crutchbag.mks.util.MksHelper.Call;
-import com.crutchbag.mks.util.MksLogger;
 import com.crutchbag.mks.util.MksParser;
 
 /* This is a microservice template class.
@@ -18,11 +18,12 @@ import com.crutchbag.mks.util.MksParser;
  */
 public class MksTemplate {
 
-    @Autowired
-    protected MQConfig mqconfig;
 
     @Autowired
     protected MQSender sender;
+
+    @Autowired
+    protected MQListener listener;
 
     @Autowired
     protected MksParser parser;
@@ -44,17 +45,17 @@ public class MksTemplate {
 
     @MQCommand
     public void setInputQueue(String s) {
-        mqconfig.setInputQueueName(s);
+        listener.changeListenerQueue(s);
     }
 
     @MQCommand
     public void setLogQueue(String s) {
-        mqconfig.setLogQueueName(s);
+        sender.changeLogQueue(s);
     }
 
     @MQCommand
     public void setOutputQueue(String s) {
-        mqconfig.setOutputQueueName(s);
+        sender.changeOutputQueue(s);
     }
 
     @MQCommand
