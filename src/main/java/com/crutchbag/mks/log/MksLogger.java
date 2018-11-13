@@ -1,12 +1,12 @@
 package com.crutchbag.mks.log;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import com.crutchbag.mks.amqp.MQSender;
+import com.crutchbag.mks.util.MksHelper;
 
-import lombok.Getter;
+import lombok.NonNull;
 
 @Component
 public class MksLogger {
@@ -14,18 +14,105 @@ public class MksLogger {
     @Autowired
     private MQSender sender;
 
-    @Getter
     private Boolean isEnabled = true;
-
-    private long msgtime;
     private Boolean awake = false;
-    private StringBuilder msg = new StringBuilder(SBSIZE);
+    private LogMessage logMessage;
 
-    private static final int SBSIZE = 1000;
-    private static final String INFOPREFIX = "INFO: ";
-    private static final String ERRORPREFIX = "ERROR: ";
-    private static final String EXCEPTION = "EXCEPTION THROWN: ";
-    private static final String ACTIVATOR = "#!";
+    private static final int SBSIZE = 1000; // StringBuilder size of logMessgae.message
+    private static final String ACTIVATOR = ">>> "; // this should be changed to something SANE for sure, atm it's just proof of concept
+    private static final String DEACTIVATOR = "<<< ";// and this
+
+    private String timestamp() {
+        return MksHelper.formatTimestamp(System.currentTimeMillis()-logMessage.timestamp);
+    }
+
+    private Boolean containsTrigger(String s) {
+        return (awake && s.contains(DEACTIVATOR)) || (!awake && s.contains(ACTIVATOR));
+    }
+
+    private String trimTrigger(String s) {
+        return awake ? s.replace(DEACTIVATOR, "") : s.replace(ACTIVATOR, "");
+    }
+
+    private void changeState() {
+        if (awake) {
+            awake = false;
+            logMessage.message.append("== LOG MESSAGE END ==");
+            sender.sendLog(logMessage);
+        } else {
+            awake = true;
+            logMessage = new LogMessage(LogType.INFO, System.currentTimeMillis(), new StringBuilder(SBSIZE));
+            logMessage.message.append("== LOG MESSAGE CREATED ON ".concat(MksHelper.formatDateTime(logMessage.timestamp)).concat(" ==\n"));
+        }
+    }
+
+    // TODO replace getMessage() with deeper analysis
+    private void appendMessage(String prefix, String s, Object obj, Throwable e) {
+        if (obj == null && e == null) {
+            logMessage.message.append(timestamp().concat(prefix).concat(s).concat("\n"));
+        } else if (e == null) {
+            logMessage.message.append(timestamp().concat(prefix).concat(s).concat(" "));
+            logMessage.message.append(obj);
+            logMessage.message.append("\n");
+        } else if (obj == null) {
+            logMessage.message.append(timestamp().concat(prefix).concat(s).concat("\n"));
+            logMessage.message.append(timestamp().concat(prefix).concat(e.getClass().getCanonicalName()).concat("\n"));
+            logMessage.message.append(timestamp().concat(prefix).concat(e.getMessage()).concat("\n"));
+        } else {
+            logMessage.message.append(timestamp().concat(prefix).concat(s).concat(" "));
+            logMessage.message.append(obj);
+            logMessage.message.append("\n");
+            logMessage.message.append(timestamp().concat(prefix).concat(e.getClass().getCanonicalName()).concat("\n"));
+            logMessage.message.append(timestamp().concat(prefix).concat(e.getMessage()).concat("\n"));
+        }
+
+    }
+
+    private void log(LogType type, String s, Object obj, Throwable e) {
+        if (!isEnabled && e != null) {
+            e.printStackTrace();
+            return;
+        } else if (!isEnabled)
+            return;
+
+        if (awake) {
+            if (containsTrigger(s)) {
+                s = trimTrigger(s);
+                appendMessage(type.prefix, s, obj, e);
+                changeState();
+            } else if (type == LogType.ERROR || type == LogType.EXCEPTION) {
+                appendMessage(type.prefix, s, obj, e);
+                changeState();
+            } else {
+                appendMessage(type.prefix, s, obj, e);
+            }
+        } else {
+            if (containsTrigger(s)) {
+                s = trimTrigger(s);
+                changeState();
+                if (type == LogType.ERROR || type == LogType.EXCEPTION) {
+                    appendMessage(type.prefix, s, obj, e);
+                    changeState();
+                } else {
+                    appendMessage(type.prefix, s, obj, e);
+                }
+            } else if (type == LogType.EXCEPTION) {
+                changeState();
+                appendMessage(type.prefix, s, obj, e);
+                changeState();
+            }
+        }
+    }
+
+    /*
+     * Public methods below
+     */
+
+    public void forceSend() {
+        if (awake) {
+            changeState();
+        }
+    }
 
     public void enable() {
         isEnabled = true;
@@ -35,159 +122,28 @@ public class MksLogger {
         isEnabled = false;
     }
 
-    private static String formatDateTime(long time) {
-        return String.format("%1$tF %1$tH:%1$tM:%1$tS", time);
-    }
-
-    private static String formatTimestamp(long time) {
-        String s = String.format("%1$tS.%1$tN ", time);
-        return s.substring(0, s.length()-6);
-    }
-
-    private String timestamp() {
-        return formatTimestamp(System.currentTimeMillis()-msgtime);
-    }
-
-    private void toggleState() {
-        if (!awake) {
-            msgtime = System.currentTimeMillis();
-            msg.append("== LOG MESSAGE CREATED ON ".concat(formatDateTime(msgtime)).concat(" ==\n"));
-            awake = true;
-        } else {
-            msg.append("== LOG MESSAGE END ==");
-            sender.sendLog(msg.toString());
-            msg.delete(0, msg.length());
-            awake = false;
-        }
-    }
-
-    public void forceSend() {
-        if (awake) {
-            toggleState();
-        }
-    }
-
-    private void appendString(String prefix, String s) {
-        msg.append(timestamp().concat(prefix).concat(s).concat("\n"));
-    }
-
-    private void appendStringObject(String prefix, String s, Object obj) {
-        msg.append(timestamp().concat(prefix).concat(s).concat(" "));
-        msg.append(obj);
-        msg.append("\n");
-    }
-
     public void logInfo(@NonNull String s) {
-        if (isEnabled) {
-            String prefix = INFOPREFIX;
-            if (awake) {
-                if (s.contains(ACTIVATOR)) {
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendString(prefix, s);
-                    toggleState();
-                } else {
-                    appendString(prefix, s);
-                }
-            } else {
-                if (s.contains(ACTIVATOR)) {
-                    toggleState();
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendString(prefix, s);
-                }
-            }
-
-        }
+        log(LogType.INFO, s, null, null);
     }
 
     public void logInfo(@NonNull String s, @NonNull Object obj) {
-        if (isEnabled) {
-            String prefix = INFOPREFIX;
-            if (awake) {
-                if (s.contains(ACTIVATOR)) {
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendStringObject(prefix, s, obj);
-                    toggleState();
-                } else {
-                    appendStringObject(prefix, s, obj);
-                }
-            } else {
-                if (s.contains(ACTIVATOR)) {
-                    toggleState();
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendStringObject(prefix, s, obj);
-                }
-            }
-
-        }
+        log(LogType.INFO, s, obj, null);
     }
 
     public void logError(@NonNull String s) {
-        if (isEnabled) {
-            String prefix = ERRORPREFIX;
-            if (awake) {
-                if (s.contains(ACTIVATOR)) {
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendString(prefix, s);
-                    toggleState();
-                } else {
-                    appendString(prefix, s);
-                }
-            } else {
-                if (s.contains(ACTIVATOR)) {
-                    toggleState();
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendString(prefix, s);
-                }
-            }
-
-        }
+        log(LogType.ERROR, s, null, null);
     }
 
     public void logError(@NonNull String s, @NonNull Object obj) {
-        if (isEnabled) {
-            String prefix = ERRORPREFIX;
-            if (awake) {
-                if (s.contains(ACTIVATOR)) {
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendStringObject(prefix, s, obj);
-                    toggleState();
-                } else {
-                    appendStringObject(prefix, s, obj);
-                }
-            } else {
-                if (s.contains(ACTIVATOR)) {
-                    toggleState();
-                    s = s.replace(ACTIVATOR+" ", "");
-                    appendStringObject(prefix, s, obj);
-                }
-            }
-
-        }
+        log(LogType.ERROR, s, obj, null);
     }
 
-    // TODO replace getMessage() with deeper analysis
+    public void logException(@NonNull String s) {
+        log(LogType.EXCEPTION, s, null, null);
+    }
+
     public void logException(@NonNull String s, @NonNull Throwable e) {
-        if (isEnabled) {
-            if (awake) {
-                msg.append(ERRORPREFIX.concat(s).concat("\n"));
-                msg.append(EXCEPTION.concat(e.getClass().getCanonicalName()).concat("\n"));
-                msg.append(e.getMessage().concat("\n"));
-            } else {
-                toggleState();
-                msg.append(ERRORPREFIX.concat(s));
-                msg.append(EXCEPTION.concat(e.getClass().getCanonicalName()).concat("\n"));
-                msg.append(e.getMessage().concat("\n"));
-                toggleState();
-            }
-        } else {
-            logConsole(ERRORPREFIX.concat(s).concat("\n"));
-            e.printStackTrace();
-        }
-    }
-
-    // just in case
-    public void logConsole(@NonNull String s) {
-        System.err.println(s);
+        log(LogType.EXCEPTION, s, null, e);
     }
 
 }

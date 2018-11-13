@@ -2,16 +2,16 @@ package com.crutchbag.mks.log;
 
 import com.google.gson.annotations.SerializedName;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
 
-@Data
-public class MksLogMessage {
+@AllArgsConstructor
+public class LogMessage {
 
     @SerializedName("type")
-    public String type;
+    public LogType type;
     @SerializedName("timestamp")
     public long timestamp;
     @SerializedName("message")
-    public String message;
+    public StringBuilder message;
 
 }

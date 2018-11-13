@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.crutchbag.mks.log.MksLogger;
+import com.crutchbag.mks.util.MksParser;
 
 @Component
 public class MQSender {
@@ -21,14 +22,24 @@ public class MQSender {
     private Queue logQueue;
 
     @Autowired
+    private MksParser parser;
+    @Autowired
     private MksLogger logger;
 
     public void sendLog(String s) {
         amqp.convertAndSend(logQueue.getName(), s);
     }
 
+    public void sendLog(Object obj) {
+        amqp.convertAndSend(logQueue.getName(), parser.convertPojoToJson(obj));
+    }
+
     public void sendOutput(String s) {
         amqp.convertAndSend(outputQueue.getName(), s);
+    }
+
+    public void sendOutput(Object obj) {
+        amqp.convertAndSend(outputQueue.getName(), parser.convertPojoToJson(obj));
     }
 
     public void changeLogQueue(String queueName) {

@@ -14,6 +14,9 @@ public final class MksHelper {
         throw new IllegalStateException("Utility class");
     }
 
+    /*
+     * Static Helper classes below
+     */
     @AllArgsConstructor
     public static class Call {
         public Object object;
@@ -51,4 +54,16 @@ public final class MksHelper {
 
     }
 
+    /*
+     * Static Helper methods below
+     */
+
+    public static String formatDateTime(long time) {
+        return String.format("%1$tF %1$tH:%1$tM:%1$tS", time);
+    }
+
+    public static String formatTimestamp(long time) {
+        String s = String.format("%1$tS.%1$tN ", time);
+        return s.substring(0, s.length()-6);
+    }
 }
